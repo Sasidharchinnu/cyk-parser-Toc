@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYK Parser Lab — Theory of Computation</title>
+  <meta name="description" content="Interactive CYK algorithm simulator: step-by-step DP table, parse tree, and batch string testing for Context-Free Grammars.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══════════════════════════════════════════ -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="logo-mark">
+        <span class="logo-g">G</span>
+        <div class="logo-pulse"></div>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">CYK Parser Lab</span>
+        <span class="logo-sub">Theory of Computation · Unit 3</span>
+      </div>
+    </div>
+    <div class="nav-pills">
+      <span class="npill green">CFG / CFL</span>
+      <span class="npill amber">O(n³|G|)</span>
+      <span class="npill purple">Unit 3</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ══════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-dot"></div>
+      Dynamic Programming on Grammars
+    </div>
+    <h1 class="hero-h1">
+      CYK Parsing<br>
+      <span class="hero-gradient">Algorithm</span>
+    </h1>
+    <p class="hero-p">
+      Simulate the <strong>Cocke–Younger–Kasami</strong> algorithm — the classic O(n³) 
+      dynamic programming method that decides whether a string belongs to a 
+      Context-Free Language defined by a grammar in <strong>Chomsky Normal Form</strong>.
+    </p>
+    <div class="hero-formula">
+      <div class="formula-item">
+        <span class="formula-label">Base</span>
+        <code>T[1][i] = { A | A → wᵢ }</code>
+      </div>
+      <div class="formula-sep">↓</div>
+      <div class="formula-item">
+        <span class="formula-label">Recurrence</span>
+        <code>T[l][i] = ⋃ₖ { A | A→BC, B∈T[k][i], C∈T[l-k][i+k] }</code>
+      </div>
+      <div class="formula-sep">↓</div>
+      <div class="formula-item accept-formula">
+        <span class="formula-label">Accept iff</span>
+        <code>S ∈ T[n][1]</code>
+      </div>
+    </div>
+    <div class="hero-stats-row">
+      <div class="hstat"><div class="hstat-n" id="stat-rules">0</div><div class="hstat-l">Productions</div></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><div class="hstat-n" id="stat-nts">0</div><div class="hstat-l">Non-Terminals</div></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><div class="hstat-n" id="stat-len">0</div><div class="hstat-l">String Length</div></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><div class="hstat-n" id="stat-cells">0</div><div class="hstat-l">DP Cells</div></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="dp-preview">
+      <div class="dp-preview-label">CYK DP Table</div>
+      <div class="dp-preview-grid">
+        <div class="dpv-cell active-cell"><span>S</span></div>
+        <div class="dpv-cell part-cell"><span>A,B</span></div>
+        <div class="dpv-cell empty-cell"><span>∅</span></div>
+        <div class="dpv-cell part-cell"><span>A</span></div>
+        <div class="dpv-cell has-cell"><span>B,C</span></div>
+        <div class="dpv-cell empty-cell"><span>∅</span></div>
+        <div class="dpv-cell has-cell"><span>S,A</span></div>
+        <div class="dpv-cell empty-cell"><span>∅</span></div>
+        <div class="dpv-cell has-cell"><span>B</span></div>
+        <div class="dpv-cell char-cell"><span>b</span></div>
+        <div class="dpv-cell char-cell"><span>a</span></div>
+        <div class="dpv-cell char-cell"><span>a</span></div>
+      </div>
+      <div class="dp-preview-legend">
+        <div class="dpl-item"><div class="dpl-dot green"></div>Contains S</div>
+        <div class="dpl-item"><div class="dpl-dot teal"></div>Non-empty</div>
+        <div class="dpl-item"><div class="dpl-dot amber"></div>Active cell</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TAB NAV ═══════════════════════════════════════════ -->
+<div class="tab-section">
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-grammar" onclick="showTab('grammar')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 8h16M8 20V8"/></svg>
+      Grammar
+    </button>
+    <button class="tab-btn" id="tab-cyk" onclick="showTab('cyk')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+      CYK Table
+    </button>
+    <button class="tab-btn" id="tab-tree" onclick="showTab('tree')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="4" r="2"/><circle cx="4" cy="16" r="2"/><circle cx="16" cy="16" r="2"/><path d="M10 6v4M10 10L4 14M10 10l6 4"/></svg>
+      Parse Tree
+    </button>
+    <button class="tab-btn" id="tab-qbank" onclick="showTab('qbank')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="8"/><path d="M7.5 7.5a2.5 2.5 0 014.33 1.67C11.83 10.5 10 11 10 12M10 15h.01"/></svg>
+      Questions
+    </button>
+    <button class="tab-btn" id="tab-batch" onclick="showTab('batch')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 9l3 3 7-7"/><rect x="2" y="2" width="16" height="16" rx="3"/></svg>
+      Batch Test
+    </button>
+  </div>
+</div>
+
+<!-- ═══ GRAMMAR EDITOR ═══════════════════════════════════ -->
+<div class="tab-panel active" id="panel-grammar">
+  <div class="pg-layout">
+
+    <!-- LEFT COLUMN -->
+    <div class="pg-left">
+
+      <!-- PRESETS -->
+      <div class="pane">
+        <div class="pane-head">
+          <div class="pane-head-icon green-icon">⊞</div>
+          <div>
+            <h2>Preset Grammars</h2>
+            <p>5 built-in CNF grammars — click to load</p>
+          </div>
+        </div>
+        <div id="preset-list" class="preset-list"></div>
+      </div>
+
+      <!-- INPUT -->
+      <div class="pane">
+        <div class="pane-head">
+          <div class="pane-head-icon amber-icon">✎</div>
+          <div>
+            <h2>Custom Grammar</h2>
+            <p>Enter your own CNF productions</p>
+          </div>
+        </div>
+        <div class="cnf-chips-row">
+          <span class="cnf-chip">A → BC (binary)</span>
+          <span class="cnf-chip">A → a (terminal)</span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Start Symbol</label>
+            <input id="inp-start" class="finp finp-sm" type="text" value="S" placeholder="S">
+          </div>
+        </div>
+        <div class="field">
+          <label>Productions <span class="field-hint">use → or -></span></label>
+          <textarea id="inp-prods" class="finp ftarea" placeholder="S → A B&#10;A → a&#10;B → b"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn-em" onclick="applyGrammar()">Apply</button>
+          <button class="btn-outline" onclick="clearAll()">Clear</button>
+        </div>
+      </div>
+
+      <!-- TEST STRING -->
+      <div class="pane">
+        <div class="pane-head">
+          <div class="pane-head-icon purple-icon">▶</div>
+          <div>
+            <h2>Test String</h2>
+            <p>Enter w to test w ∈ L(G)</p>
+          </div>
+        </div>
+        <div class="field">
+          <label>String w</label>
+          <input id="inp-string" class="finp finp-lg" type="text" placeholder="e.g. baaba" onkeydown="if(event.key==='Enter')runCYK()">
+        </div>
+        <div id="sample-chips" class="schip-row"></div>
+        <div class="btn-row">
+          <button class="btn-em btn-run" onclick="runCYK()">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><polygon points="4 2 18 10 4 18"/></svg>
+            Run CYK
+          </button>
+          <button class="btn-outline" onclick="showTab('cyk')">View Table →</button>
+        </div>
+        <div id="quick-result" class="qr-box" style="display:none"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="pg-right">
+
+      <!-- GRAMMAR OVERVIEW -->
+      <div class="pane">
+        <div class="pane-head">
+          <div class="pane-head-icon green-icon">G</div>
+          <div>
+            <h2>Grammar Overview</h2>
+            <p id="grammar-desc">Load a preset or enter productions</p>
+          </div>
+        </div>
+        <div id="grammar-display">
+          <div class="empty-state"><div class="es-icon">G</div><p>No grammar loaded</p></div>
+        </div>
+      </div>
+
+      <!-- CNF EXPLAINER -->
+      <div class="pane">
+        <div class="pane-head">
+          <div class="pane-head-icon amber-icon">?</div>
+          <div>
+            <h2>Chomsky Normal Form</h2>
+            <p>Every CFG can be converted to CNF</p>
+          </div>
+        </div>
+        <div class="cnf-grid">
+          <div class="cnf-card">
+            <div class="cnf-badge">1</div>
+            <div><strong>A → BC</strong><p>Binary rule — exactly two non-terminals on right side</p></div>
+          </div>
+          <div class="cnf-card">
+            <div class="cnf-badge">2</div>
+            <div><strong>A → a</strong><p>Terminal rule — exactly one terminal character</p></div>
+          </div>
+          <div class="cnf-card">
+            <div class="cnf-badge amber">3</div>
+            <div><strong>O(n³|G|)</strong><p>Cubic time in string length, linear in grammar size</p></div>
+          </div>
+          <div class="cnf-card">
+            <div class="cnf-badge purple">4</div>
+            <div><strong>S ∈ T[n][1]</strong><p>Acceptance: start symbol in top-corner cell</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CYK TABLE ═══════════════════════════════════════ -->
+<div class="tab-panel" id="panel-cyk">
+  <div class="pg-single">
+
+    <!-- CONTROLS ROW -->
+    <div class="ctrl-pane">
+      <div class="ctrl-left">
+        <div class="pane-head-sm">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+          CYK Step Controller
+        </div>
+        <div class="ctrl-row">
+          <input id="cyk-str-disp" class="finp finp-sm finp-mono flex-1" type="text" readonly placeholder="String appears here after running CYK">
+        </div>
+        <div class="ctrl-btns">
+          <button class="btn-outline btn-sm" id="btn-prev" onclick="stepPrev()" disabled>← Prev</button>
+          <button class="btn-em btn-sm" id="btn-next" onclick="stepNext()" disabled>Next →</button>
+          <button class="btn-outline btn-sm" id="btn-runall" onclick="stepRunAll()" disabled>Run All ⇒</button>
+          <button class="btn-ghost btn-sm" onclick="stepReset()">Reset</button>
+        </div>
+        <div id="prog-wrap" class="prog-wrap" style="display:none">
+          <div class="prog-track"><div class="prog-fill" id="prog-bar"></div></div>
+          <span id="prog-label" class="prog-label">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="ctrl-right">
+        <div class="pane-head-sm">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 5h16M2 10h10M2 15h7"/></svg>
+          Step Log
+        </div>
+        <div id="step-log" class="step-log"><div class="muted">Click <strong>Run CYK</strong> in Grammar tab, then step through here</div></div>
+        <div class="cur-step-box" id="cur-step-head">Ready</div>
+      </div>
+    </div>
+
+    <!-- DP TABLE -->
+    <div class="pane">
+      <div class="pane-head-between">
+        <div class="pane-head-sm">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 8h16M8 8v10"/></svg>
+          DP Table — T[length][start]
+        </div>
+        <div id="result-badge" class="res-badge" style="display:none">–</div>
+      </div>
+      <p class="table-hint">Each cell T[l][i] = non-terminals that can derive the substring starting at position i with length l</p>
+      <div id="dp-table" class="dp-table">
+        <div class="empty-state"><div class="es-icon">≡</div><p>Run CYK from Grammar tab</p></div>
+      </div>
+    </div>
+
+    <!-- RECURRENCE -->
+    <div class="rec-pane">
+      <div class="rec-label">Algorithm Recurrence</div>
+      <div class="rec-items">
+        <div class="rec-row"><span class="rec-tag green">Base</span><code>T[1][i] = { A | A → wᵢ }</code></div>
+        <div class="rec-row"><span class="rec-tag teal">Step</span><code>T[l][i] = ⋃ₖ { A | A→BC, B∈T[k][i], C∈T[l-k][i+k] }</code></div>
+        <div class="rec-row"><span class="rec-tag amber">Accept</span><code>w ∈ L(G)  iff  S ∈ T[n][1]</code></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ PARSE TREE ═══════════════════════════════════════ -->
+<div class="tab-panel" id="panel-tree">
+  <div class="pg-layout-3col">
+
+    <div class="pg-left">
+      <div class="pane">
+        <div class="pane-head-sm mb-1">Parse Info</div>
+        <div id="tree-info"><div class="empty-state"><div class="es-icon">◌</div><p>Run CYK on an accepted string</p></div></div>
+      </div>
+      <div class="pane">
+        <div class="pane-head-sm mb-1">Derivation Steps</div>
+        <div id="derivation"><div class="empty-state"><div class="es-icon">↳</div><p>No derivation yet</p></div></div>
+      </div>
+    </div>
+
+    <div class="pg-right" style="grid-column: span 2">
+      <div class="pane tree-pane">
+        <div class="pane-head-sm mb-1" id="tree-title">Parse Tree</div>
+        <svg id="tree-svg" class="tree-svg"></svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ QUESTION BANK ══════════════════════════════════ -->
+<div class="tab-panel" id="panel-qbank">
+  <div class="pg-single">
+    <div class="qb-header">
+      <div class="qb-header-left">
+        <h2 class="qb-title">Question Bank</h2>
+        <p class="qb-subtitle">10 ready-to-run CYK problems across 5 grammars. Click <strong>Run →</strong> for instant results or <strong>Step</strong> to walk through manually.</p>
+      </div>
+      <div class="qb-legend">
+        <div class="qbl-item"><span class="qbl-dot green"></span>Expected Accept</div>
+        <div class="qbl-item"><span class="qbl-dot red"></span>Expected Reject</div>
+      </div>
+    </div>
+    <div class="qb-grid" id="qbank-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ BATCH TEST ═══════════════════════════════════════ -->
+<div class="tab-panel" id="panel-batch">
+  <div class="pg-single">
+    <div class="pane">
+      <div class="pane-head-sm mb-1">Batch String Tester</div>
+      <p class="field-desc">Test multiple strings at once — one per line. Use <code>ε</code> for empty string. Results show which strings belong to L(G).</p>
+      <div class="batch-layout">
+        <div class="field" style="flex:1">
+          <label>Strings (one per line)</label>
+          <textarea id="batch-inp" class="finp ftarea" style="min-height:200px" placeholder="a&#10;b&#10;ab&#10;ba&#10;aabb&#10;aaabbb"></textarea>
+        </div>
+        <div class="batch-side">
+          <div class="btn-row" style="flex-direction:column">
+            <button class="btn-em" onclick="runBatch()">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><polygon points="4 2 18 10 4 18"/></svg>
+              Run Batch
+            </button>
+            <button class="btn-outline" onclick="loadSamples()">Load Samples</button>
+          </div>
+          <div id="batch-summary" class="batch-sum"></div>
+        </div>
+      </div>
+      <div id="batch-out" style="display:none;margin-top:1.5rem">
+        <div class="tbl-wrap"><table id="batch-table" class="data-tbl"></table></div>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="pane-head-sm mb-1">Language Analysis</div>
+      <div id="lang-analysis"><div class="empty-state"><div class="es-icon">∑</div><p>Run batch to see which strings ∈ L(G)</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span><strong>CYK Parser Lab</strong> · Theory of Computation Assignment</span>
+    <span>Unit 3 · Context-Free Grammars · Chomsky Normal Form · DP</span>
+  </div>
+</footer>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
